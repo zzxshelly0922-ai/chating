@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+    <title>我們的秘密基地 🌅</title>
+    <!-- 引入 Firebase 腳本 -->
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            /* 晚霞動態漸層 */
+            background: linear-gradient(-45deg, #ff7e5f, #feb47b, #ff758c, #ff7eb3);
+            background-size: 400% 400%;
+            animation: gradientBG 15s ease infinite;
+            padding: 20px;
+        }
+
+        @keyframes gradientBG {
+            0% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+            100% { background-position: 0% 50%; }
+        }
+
+        /* 密碼驗證卡片 */
+        .login-card {
+            background: rgba(255, 255, 255, 0.95);
+            padding: 30px 25px;
+            border-radius: 20px;
+            box-shadow: 0 15px 35px rgba(0,0,0,0.2);
+            text-align: center;
+            width: 100%;
+            max-width: 360px;
+            backdrop-filter: blur(10px);
+        }
+
+        .login-card h2 {
+            color: #ff7e5f;
+            margin-bottom: 15px;
+            font-size: 1.4rem;
+        }
+
+        .input-box {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #ffeaa7;
+            border-radius: 12px;
+            font-size: 1rem;
+            outline: none;
+            margin-bottom: 15px;
+            text-align: center;
+            transition: border-color 0.3s;
+        }
+
+        .input-box:focus {
+            border-color: #ff7e5f;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: linear-gradient(45deg, #ff7e5f, #ff758c);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 0 5px 15px rgba(255, 126, 95, 0.4);
+            transition: transform 0.2s, background 0.3s;
+        }
+
+        .btn:active {
+            transform: scale(0.98);
+        }
+
+        /* 主留言牆容器 */
+        .chat-card {
+            display: none;
+            flex-direction: column;
+            width: 100%;
+            max-width: 450px;
+            height: 80vh;
+            background: rgba(255, 255, 255, 0.92);
+            border-radius: 24px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+            overflow: hidden;
+            backdrop-filter: blur(10px);
+        }
+
+        .chat-header {
+            background: rgba(255, 255, 255, 0.9);
+            padding: 15px 20px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .chat-header h3 {
+            color: #333;
+            font-size: 1.1rem;
+        }
+
+        .user-select {
+            padding: 6px 12px;
+            border-radius: 20px;
+            border: 1px solid #ff7e5f;
+            background: #fff0ed;
+            color: #ff7e5f;
+            font-weight: bold;
+            outline: none;
+            cursor: pointer;
+        }
+
+        .messages-box {
+            flex: 1;
+            padding: 20px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        /* 訊息泡泡風格 */
+        .msg-item {
+            display: flex;
+            flex-direction: column;
+            max-width: 80%;
+        }
+
+        .msg-item.my-msg {
+            align-self: flex-end;
+            align-items: flex-end;
+        }
+
+        .msg-item.other-msg {
+            align-self: flex-start;
+            align-items: flex-start;
+        }
+
+        .msg-author {
+            font-size: 0.75rem;
+            color: #888;
+            margin-bottom: 4px;
+            padding: 0 4px;
+        }
+
+        .msg-bubble {
+            padding: 12px 16px;
+            border-radius: 18px;
+            font-size: 0.95rem;
+            line-height: 1.4;
+            word-break: break-word;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        }
+
+        .my-msg .msg-bubble {
+            background: linear-gradient(135deg, #ff7e5f, #ff758c);
+            color: white;
+            border-bottom-right-radius: 4px;
+        }
+
+        .other-msg .msg-bubble {
+            background: #ffffff;
+            color: #333;
+            border-bottom-left-radius: 4px;
+            border: 1px solid #f0f0f0;
+        }
+
+        .msg-time {
+            font-size: 0.65rem;
+            color: rgba(255,255,255,0.8);
+            margin-top: 4px;
+            text-align: right;
+        }
+
+        .other-msg .msg-time {
+            color: #aaa;
+        }
+
+        .chat-input-area {
+            padding: 15px;
+            background: #ffffff;
+            border-top: 1px solid #eee;
+            display: flex;
+            gap: 10px;
+        }
+
+        .chat-input-area input {
+            flex: 1;
+            padding: 10px 15px;
+            border: 1px solid #ddd;
+            border-radius: 20px;
+            outline: none;
+            font-size: 0.95rem;
+        }
+
+        .chat-input-area input:focus {
+            border-color: #ff7e5f;
+        }
+
+        .send-btn {
+            padding: 10px 20px;
+            background: #ff7e5f;
+            color: white;
+            border: none;
+            border-radius: 20px;
+            font-weight: bold;
+            cursor: pointer;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- 密碼登入區 -->
+    <div class="login-card" id="loginCard">
+        <h2>🔒 秘密基地入口</h2>
+        <input type="password" id="passwordInput" class="input-box" placeholder="請輸入我們約定的密碼...">
+        <button class="btn" onclick="checkPassword()">開啟留言牆 🌅</button>
+    </div>
+
+    <!-- 留言牆主體 -->
+    <div class="chat-card" id="chatCard">
+        <div class="chat-header">
+            <h3>💌 我們的留言牆</h3>
+            <select class="user-select" id="userSelect">
+                <option value="我">我是 我</option>
+                <option value="Jayen">我是 Jayen</option>
+            </select>
+        </div>
+
+        <div class="messages-box" id="messagesBox">
+            <!-- 留言內容會在這裡動態渲染 -->
+        </div>
+
+        <div class="chat-input-area">
+            <input type="text" id="msgInput" placeholder="寫下想說的話..." onkeypress="handleKeyPress(event)">
+            <button class="send-btn" onclick="sendMessage()">發送</button>
+        </div>
+    </div>
+
+    <script>
+        // 1. 在這裡設定你們進入網站的暗號密碼
+        const SECRET_PASSWORD = "1234"; // 你可以修改成你們專屬的密碼
+
+        // 2. Firebase 資料庫配置 (下一步會帶你申請並填寫)
+        const firebaseConfig = {
+            apiKey: "YOUR_API_KEY",
+            authDomain: "YOUR_PROJECT.firebaseapp.com",
+            databaseURL: "https://YOUR_PROJECT-default-rtdb.firebaseio.com",
+            projectId: "YOUR_PROJECT",
+            storageBucket: "YOUR_PROJECT.appspot.com",
+            messagingSenderId: "123456789",
+            appId: "1:123456789:web:abcdef"
+        };
+
+        // 初始化 Firebase
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const messagesRef = database.ref('messages');
+
+        // 密碼驗證
+        function checkPassword() {
+            const input = document.getElementById('passwordInput').value;
+            if (input === SECRET_PASSWORD) {
+                document.getElementById('loginCard').style.display = 'none';
+                document.getElementById('chatCard').style.display = 'flex';
+                listenMessages(); // 開啟即時監聽
+            } else {
+                alert('密碼不對喔！請重新輸入 😊');
+            }
+        }
+
+        // 發送留言
+        function sendMessage() {
+            const input = document.getElementById('msgInput');
+            const currentUser = document.getElementById('userSelect').value;
+            const text = input.value.trim();
+
+            if (text === '') return;
+
+            const now = new Date();
+            const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
+
+            // 寫入 Firebase 資料庫
+            messagesRef.push({
+                user: currentUser,
+                text: text,
+                time: timeStr,
+                timestamp: Date.now()
+            });
+
+            input.value = '';
+        }
+
+        function handleKeyPress(e) {
+            if (e.key === 'Enter') sendMessage();
+        }
+
+        // 即時接收留言（只要資料庫有更新，畫面上就會自動跳出來）
+        function listenMessages() {
+            const box = document.getElementById('messagesBox');
+            const currentUser = document.getElementById('userSelect').value;
+
+            messagesRef.on('child_added', (snapshot) => {
+                const data = snapshot.val();
+                const isMe = data.user === currentUser;
+
+                const msgDiv = document.createElement('div');
+                msgDiv.className = `msg-item ${isMe ? 'my-msg' : 'other-msg'}`;
+                
+                msgDiv.innerHTML = `
+                    <div class="msg-author">${data.user}</div>
+                    <div class="msg-bubble">
+                        ${data.text}
+                        <div class="msg-time">${data.time}</div>
+                    </div>
+                `;
+
+                box.appendChild(msgDiv);
+                box.scrollTop = box.scrollHeight; // 自動捲動到底部
+            });
+        }
+    </script>
+</body>
+</html>
