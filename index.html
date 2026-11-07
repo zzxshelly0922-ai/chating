@@ -251,11 +251,11 @@
         </div>
     </div>
 
-        <script>
+    <script>
         // 1. 密碼設定
-        const SECRET_PASSWORD = "0513"; // 👈 可以改成你們專屬的密碼
+        const SECRET_PASSWORD = "0513";
 
-        // 2. Firebase 設定（已帶入你的專屬資料庫網址）
+        // 2. Firebase 設定
         const firebaseConfig = {
             apiKey: "AIzaSyCJUVx_pyOx2QRNUIorDhuY7FUtRHi8U9A",
             authDomain: "our-space-556ed.firebaseapp.com",
@@ -278,7 +278,7 @@
                 document.getElementById('loginCard').style.display = 'none';
                 document.getElementById('chatCard').style.display = 'flex';
                 
-                // 登入成功，立刻從雲端讀取歷史所有留言！
+                // 登入成功，開啟雲端即時同步
                 loadAllMessages();
             } else {
                 alert('密碼不對喔！請重新輸入 😊');
@@ -302,28 +302,33 @@
                 text: text,
                 time: timeStr,
                 timestamp: Date.now()
+            }).then(() => {
+                input.value = ''; // 發送成功後清空輸入框
+            }).catch((error) => {
+                alert("發送失敗，請檢查 Firebase 規則設定：" + error.message);
             });
-
-            input.value = '';
         }
 
         function handleKeyPress(e) {
             if (e.key === 'Enter') sendMessage();
         }
 
+        // 當切換選單身分時，自動刷新左右氣泡顏色與方向
+        document.getElementById('userSelect').addEventListener('change', () => {
+            loadAllMessages();
+        });
+
         // 從 Firebase 載入並實時同步所有歷史留言
         function loadAllMessages() {
             const box = document.getElementById('messagesBox');
 
-            // 使用 value 監聽，保證一次性載入全部歷史紀錄，並且有新留言時自動同步
             messagesRef.on('value', (snapshot) => {
-                box.innerHTML = ''; // 每次雲端更新時刷新列表
+                box.innerHTML = ''; // 清空列表重新渲染
                 const data = snapshot.val();
                 if (!data) return;
 
                 const currentUser = document.getElementById('userSelect').value;
 
-                // 遍歷所有訊息並印出
                 Object.values(data).forEach(msg => {
                     const isMe = msg.user === currentUser;
                     const msgDiv = document.createElement('div');
@@ -339,11 +344,11 @@
                     box.appendChild(msgDiv);
                 });
 
-                // 自動滾動到最底部
+                // 自動滾動到底部
                 box.scrollTop = box.scrollHeight;
             });
         }
     </script>
-
 </body>
 </html>
+
