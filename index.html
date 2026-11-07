@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>我們的秘密基地 🌅</title>
     <!-- 引入 Firebase 腳本 -->
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-app-compat.js"></script>
-    <script src="https://www.gstatic.com/firebasejs/9.23.0/firebase-database-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     <style>
         * {
             margin: 0;
@@ -20,7 +20,6 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            /* 晚霞動態漸層 */
             background: linear-gradient(-45deg, #ff7e5f, #feb47b, #ff758c, #ff7eb3);
             background-size: 400% 400%;
             animation: gradientBG 15s ease infinite;
@@ -33,7 +32,6 @@
             100% { background-position: 0% 50%; }
         }
 
-        /* 密碼驗證卡片 */
         .login-card {
             background: rgba(255, 255, 255, 0.95);
             padding: 30px 25px;
@@ -60,11 +58,6 @@
             outline: none;
             margin-bottom: 15px;
             text-align: center;
-            transition: border-color 0.3s;
-        }
-
-        .input-box:focus {
-            border-color: #ff7e5f;
         }
 
         .btn {
@@ -78,14 +71,8 @@
             font-weight: bold;
             cursor: pointer;
             box-shadow: 0 5px 15px rgba(255, 126, 95, 0.4);
-            transition: transform 0.2s, background 0.3s;
         }
 
-        .btn:active {
-            transform: scale(0.98);
-        }
-
-        /* 主留言牆容器 */
         .chat-card {
             display: none;
             flex-direction: column;
@@ -108,11 +95,6 @@
             align-items: center;
         }
 
-        .chat-header h3 {
-            color: #333;
-            font-size: 1.1rem;
-        }
-
         .user-select {
             padding: 6px 12px;
             border-radius: 20px;
@@ -121,7 +103,6 @@
             color: #ff7e5f;
             font-weight: bold;
             outline: none;
-            cursor: pointer;
         }
 
         .messages-box {
@@ -133,7 +114,6 @@
             gap: 15px;
         }
 
-        /* 訊息泡泡風格 */
         .msg-item {
             display: flex;
             flex-direction: column;
@@ -207,10 +187,6 @@
             font-size: 0.95rem;
         }
 
-        .chat-input-area input:focus {
-            border-color: #ff7e5f;
-        }
-
         .send-btn {
             padding: 10px 20px;
             background: #ff7e5f;
@@ -224,26 +200,22 @@
 </head>
 <body>
 
-    <!-- 密碼登入區 -->
     <div class="login-card" id="loginCard">
         <h2>🔒 秘密基地入口</h2>
         <input type="password" id="passwordInput" class="input-box" placeholder="請輸入我們約定的密碼...">
         <button class="btn" onclick="checkPassword()">開啟留言牆 🌅</button>
     </div>
 
-    <!-- 留言牆主體 -->
     <div class="chat-card" id="chatCard">
         <div class="chat-header">
             <h3>💌 我們的留言牆</h3>
-            <select class="user-select" id="userSelect">
+            <select class="user-select" id="userSelect" onchange="loadAllMessages()">
                 <option value="Shelly">我是 Shelly</option>
                 <option value="Piaget">我是 Piaget</option>
             </select>
         </div>
 
-        <div class="messages-box" id="messagesBox">
-            <!-- 留言內容會在這裡動態渲染 -->
-        </div>
+        <div class="messages-box" id="messagesBox"></div>
 
         <div class="chat-input-area">
             <input type="text" id="msgInput" placeholder="寫下想說的話..." onkeypress="handleKeyPress(event)">
@@ -252,40 +224,37 @@
     </div>
 
     <script>
-        // 1. 密碼設定
         const SECRET_PASSWORD = "0513";
 
-        // 2. Firebase 設定
         const firebaseConfig = {
             apiKey: "AIzaSyCJUVx_pyOx2QRNUIorDhuY7FUtRHi8U9A",
             authDomain: "our-space-556ed.firebaseapp.com",
-            databaseURL: "https://our-space-556ed-default-rtdb.firebaseio.com",
+            // 修正為截圖中實際的新加坡資料庫網址！
+            databaseURL: "https://our-space-556ed-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "our-space-556ed",
             storageBucket: "our-space-556ed.firebasestorage.app",
             messagingSenderId: "122023099611",
             appId: "1:122023099611:web:cbaa037dd776bc0f6a20fe"
         };
 
-        // 初始化 Firebase
-        firebase.initializeApp(firebaseConfig);
+        // 初始化
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
         const database = firebase.database();
         const messagesRef = database.ref('messages');
 
-        // 密碼驗證與解鎖
         function checkPassword() {
             const input = document.getElementById('passwordInput').value;
             if (input === SECRET_PASSWORD) {
                 document.getElementById('loginCard').style.display = 'none';
                 document.getElementById('chatCard').style.display = 'flex';
-                
-                // 登入成功，開啟雲端即時同步
                 loadAllMessages();
             } else {
                 alert('密碼不對喔！請重新輸入 😊');
             }
         }
 
-        // 發送新留言
         function sendMessage() {
             const input = document.getElementById('msgInput');
             const currentUser = document.getElementById('userSelect').value;
@@ -296,16 +265,17 @@
             const now = new Date();
             const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
-            // 推送到雲端資料庫保存
             messagesRef.push({
                 user: currentUser,
                 text: text,
                 time: timeStr,
                 timestamp: Date.now()
-            }).then(() => {
-                input.value = ''; // 發送成功後清空輸入框
-            }).catch((error) => {
-                alert("發送失敗，請檢查 Firebase 規則設定：" + error.message);
+            }, function(error) {
+                if (error) {
+                    alert("發送失敗！原因：" + error.message);
+                } else {
+                    input.value = '';
+                }
             });
         }
 
@@ -313,17 +283,11 @@
             if (e.key === 'Enter') sendMessage();
         }
 
-        // 當切換選單身分時，自動刷新左右氣泡顏色與方向
-        document.getElementById('userSelect').addEventListener('change', () => {
-            loadAllMessages();
-        });
-
-        // 從 Firebase 載入並實時同步所有歷史留言
         function loadAllMessages() {
             const box = document.getElementById('messagesBox');
 
             messagesRef.on('value', (snapshot) => {
-                box.innerHTML = ''; // 清空列表重新渲染
+                box.innerHTML = '';
                 const data = snapshot.val();
                 if (!data) return;
 
@@ -344,11 +308,9 @@
                     box.appendChild(msgDiv);
                 });
 
-                // 自動滾動到底部
                 box.scrollTop = box.scrollHeight;
             });
         }
     </script>
 </body>
 </html>
-
