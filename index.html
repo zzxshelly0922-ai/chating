@@ -202,7 +202,7 @@
 
     <div class="login-card" id="loginCard">
         <h2>🔒 秘密基地入口</h2>
-        <input type="password" id="passwordInput" class="input-box" placeholder="請輸入我們約定的密碼...">
+        <input type="password" id="passwordInput" class="input-box" placeholder="請輸入我們約定的密碼..." onkeypress="if(event.key==='Enter') checkPassword()">
         <button class="btn" onclick="checkPassword()">開啟留言牆 🌅</button>
     </div>
 
@@ -229,7 +229,6 @@
         const firebaseConfig = {
             apiKey: "AIzaSyCJUVx_pyOx2QRNUIorDhuY7FUtRHi8U9A",
             authDomain: "our-space-556ed.firebaseapp.com",
-            // 修正為截圖中實際的新加坡資料庫網址！
             databaseURL: "https://our-space-556ed-default-rtdb.asia-southeast1.firebasedatabase.app",
             projectId: "our-space-556ed",
             storageBucket: "our-space-556ed.firebasestorage.app",
@@ -237,7 +236,6 @@
             appId: "1:122023099611:web:cbaa037dd776bc0f6a20fe"
         };
 
-        // 初始化
         if (!firebase.apps.length) {
             firebase.initializeApp(firebaseConfig);
         }
