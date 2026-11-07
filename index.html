@@ -251,40 +251,41 @@
         </div>
     </div>
 
-    <script>
-        // 1. 在這裡設定你們進入網站的暗號密碼
-        const SECRET_PASSWORD = "0513"; // 你可以修改成你們專屬的密碼
+        <script>
+        // 1. 密碼設定
+        const SECRET_PASSWORD = "0513"; // 👈 可以改成你們專屬的密碼
 
-        // 2. Firebase 資料庫配置 (下一步會帶你申請並填寫)
+        // 2. Firebase 設定（已帶入你的專屬資料庫網址）
         const firebaseConfig = {
-    apiKey: "AIzaSyCJUVx_pyOx2QRNUIorDhuY7FUtRHi8U9A",
-    authDomain: "our-space-556ed.firebaseapp.com",
-    databaseURL: "https://our-space-556ed-default-rtdb.firebaseio.com",
-    projectId: "our-space-556ed",
-    storageBucket: "our-space-556ed.firebasestorage.app",
-    messagingSenderId: "122023099611",
-    appId: "1:122023099611:web:cbaa037dd776bc0f6a20fe"
-};
-
+            apiKey: "AIzaSyCJUVx_pyOx2QRNUIorDhuY7FUtRHi8U9A",
+            authDomain: "our-space-556ed.firebaseapp.com",
+            databaseURL: "https://our-space-556ed-default-rtdb.firebaseio.com",
+            projectId: "our-space-556ed",
+            storageBucket: "our-space-556ed.firebasestorage.app",
+            messagingSenderId: "122023099611",
+            appId: "1:122023099611:web:cbaa037dd776bc0f6a20fe"
+        };
 
         // 初始化 Firebase
         firebase.initializeApp(firebaseConfig);
         const database = firebase.database();
         const messagesRef = database.ref('messages');
 
-        // 密碼驗證
+        // 密碼驗證與解鎖
         function checkPassword() {
             const input = document.getElementById('passwordInput').value;
             if (input === SECRET_PASSWORD) {
                 document.getElementById('loginCard').style.display = 'none';
                 document.getElementById('chatCard').style.display = 'flex';
-                listenMessages(); // 開啟即時監聽
+                
+                // 登入成功，立刻從雲端讀取歷史所有留言！
+                loadAllMessages();
             } else {
                 alert('密碼不對喔！請重新輸入 😊');
             }
         }
 
-        // 發送留言
+        // 發送新留言
         function sendMessage() {
             const input = document.getElementById('msgInput');
             const currentUser = document.getElementById('userSelect').value;
@@ -295,7 +296,7 @@
             const now = new Date();
             const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
 
-            // 寫入 Firebase 資料庫
+            // 推送到雲端資料庫保存
             messagesRef.push({
                 user: currentUser,
                 text: text,
@@ -310,30 +311,39 @@
             if (e.key === 'Enter') sendMessage();
         }
 
-        // 即時接收留言（只要資料庫有更新，畫面上就會自動跳出來）
-        function listenMessages() {
+        // 從 Firebase 載入並實時同步所有歷史留言
+        function loadAllMessages() {
             const box = document.getElementById('messagesBox');
-            const currentUser = document.getElementById('userSelect').value;
 
-            messagesRef.on('child_added', (snapshot) => {
+            // 使用 value 監聽，保證一次性載入全部歷史紀錄，並且有新留言時自動同步
+            messagesRef.on('value', (snapshot) => {
+                box.innerHTML = ''; // 每次雲端更新時刷新列表
                 const data = snapshot.val();
-                const isMe = data.user === currentUser;
+                if (!data) return;
 
-                const msgDiv = document.createElement('div');
-                msgDiv.className = `msg-item ${isMe ? 'my-msg' : 'other-msg'}`;
-                
-                msgDiv.innerHTML = `
-                    <div class="msg-author">${data.user}</div>
-                    <div class="msg-bubble">
-                        ${data.text}
-                        <div class="msg-time">${data.time}</div>
-                    </div>
-                `;
+                const currentUser = document.getElementById('userSelect').value;
 
-                box.appendChild(msgDiv);
-                box.scrollTop = box.scrollHeight; // 自動捲動到底部
+                // 遍歷所有訊息並印出
+                Object.values(data).forEach(msg => {
+                    const isMe = msg.user === currentUser;
+                    const msgDiv = document.createElement('div');
+                    msgDiv.className = `msg-item ${isMe ? 'my-msg' : 'other-msg'}`;
+                    
+                    msgDiv.innerHTML = `
+                        <div class="msg-author">${msg.user}</div>
+                        <div class="msg-bubble">
+                            ${msg.text}
+                            <div class="msg-time">${msg.time}</div>
+                        </div>
+                    `;
+                    box.appendChild(msgDiv);
+                });
+
+                // 自動滾動到最底部
+                box.scrollTop = box.scrollHeight;
             });
         }
     </script>
+
 </body>
 </html>
